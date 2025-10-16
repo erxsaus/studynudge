@@ -4,14 +4,12 @@ import StudyLogForm from "@/components/StudyLogForm";
 import EmptyState from "@/components/EmptyState";
 import ThemeToggle from "@/components/ThemeToggle";
 
-export default function Timer() {
-  const [activeSession, setActiveSession] = useState<{
-    name: string;
-    targetMinutes: number;
-  } | null>({
-    name: "Mathematics",
-    targetMinutes: 60,
-  });
+interface TimerProps {
+  activeSession: { name: string; targetMinutes: number } | null;
+  setActiveSession: (session: { name: string; targetMinutes: number } | null) => void;
+}
+
+export default function Timer({ activeSession, setActiveSession }: TimerProps) {
   const [showLogForm, setShowLogForm] = useState(false);
   const [completedMinutes, setCompletedMinutes] = useState(0);
 

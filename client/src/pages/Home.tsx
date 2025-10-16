@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StudySessionCard from "@/components/StudySessionCard";
@@ -7,7 +8,12 @@ import StudyNotesDialog from "@/components/StudyNotesDialog";
 import EmptyState from "@/components/EmptyState";
 import ThemeToggle from "@/components/ThemeToggle";
 
-export default function Home() {
+interface HomeProps {
+  setActiveSession: (session: { name: string; targetMinutes: number }) => void;
+}
+
+export default function Home({ setActiveSession }: HomeProps) {
+  const [, setLocation] = useLocation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<{
@@ -58,7 +64,14 @@ export default function Home() {
   };
 
   const handleStartSession = (sessionId: string) => {
-    console.log("Start session:", sessionId);
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setActiveSession({
+        name: session.name,
+        targetMinutes: session.dailyTargetMinutes,
+      });
+      setLocation("/timer");
+    }
   };
 
   const handleOpenNotes = (session: { id: string; name: string }) => {
