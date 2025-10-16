@@ -15,6 +15,7 @@ export default function Progress() {
     { 
       id: "1", 
       name: "Mathematics", 
+      theme: "School",
       totalMinutes: 420, 
       sessionsCount: 8, 
       streak: 5,
@@ -23,6 +24,7 @@ export default function Progress() {
     { 
       id: "2", 
       name: "Spanish", 
+      theme: "Personal Development",
       totalMinutes: 315, 
       sessionsCount: 7, 
       streak: 3,
@@ -31,6 +33,7 @@ export default function Progress() {
     { 
       id: "3", 
       name: "Web Development", 
+      theme: "Career",
       totalMinutes: 540, 
       sessionsCount: 6, 
       streak: 4,
@@ -119,13 +122,27 @@ export default function Progress() {
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-semibold mb-4">Study Sessions</h2>
-              <div className="space-y-3">
-                {sessions.map((session) => (
-                  <SessionProgressCard
-                    key={session.id}
-                    {...session}
-                    onClick={() => setSelectedSession(session.id)}
-                  />
+              <div className="space-y-4">
+                {Array.from(new Set(sessions.map(s => s.theme))).map(theme => (
+                  <div key={theme}>
+                    <h3 className="text-base font-medium mb-3 flex items-center gap-2 text-muted-foreground">
+                      <span>{theme}</span>
+                      <span className="text-sm font-normal">
+                        ({sessions.filter(s => s.theme === theme).length})
+                      </span>
+                    </h3>
+                    <div className="space-y-3">
+                      {sessions
+                        .filter(s => s.theme === theme)
+                        .map((session) => (
+                          <SessionProgressCard
+                            key={session.id}
+                            {...session}
+                            onClick={() => setSelectedSession(session.id)}
+                          />
+                        ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
