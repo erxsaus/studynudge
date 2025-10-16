@@ -8,11 +8,22 @@ import StudyNotesDialog from "@/components/StudyNotesDialog";
 import EmptyState from "@/components/EmptyState";
 import ThemeToggle from "@/components/ThemeToggle";
 
-interface HomeProps {
-  setActiveSession: (session: { name: string; targetMinutes: number }) => void;
+interface Session {
+  id: string;
+  name: string;
+  description: string;
+  theme: string;
+  dailyTargetMinutes: number;
+  todayMinutes?: number;
 }
 
-export default function Home({ setActiveSession }: HomeProps) {
+interface HomeProps {
+  setActiveSession: (session: { name: string; targetMinutes: number }) => void;
+  sessions: Session[];
+  setSessions: (sessions: Session[]) => void;
+}
+
+export default function Home({ setActiveSession, sessions, setSessions }: HomeProps) {
   const [, setLocation] = useLocation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
@@ -20,32 +31,6 @@ export default function Home({ setActiveSession }: HomeProps) {
     id: string;
     name: string;
   } | null>(null);
-  const [sessions, setSessions] = useState([
-    {
-      id: "1",
-      name: "Mathematics",
-      description: "Advanced calculus and linear algebra practice",
-      theme: "School",
-      dailyTargetMinutes: 60,
-      todayMinutes: 30,
-    },
-    {
-      id: "2",
-      name: "Spanish",
-      description: "Vocabulary building and conversation practice",
-      theme: "Personal Development",
-      dailyTargetMinutes: 45,
-      todayMinutes: 45,
-    },
-    {
-      id: "3",
-      name: "Web Development",
-      description: "Learning React and TypeScript fundamentals",
-      theme: "Career",
-      dailyTargetMinutes: 90,
-      todayMinutes: 20,
-    },
-  ]);
 
   const handleCreateSession = (newSession: {
     name: string;

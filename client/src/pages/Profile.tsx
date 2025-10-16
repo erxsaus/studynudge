@@ -1,20 +1,76 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Bell, BellOff, Smartphone, Mail } from "lucide-react";
+import EditSessionDialog from "@/components/EditSessionDialog";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import { Bell, BellOff, Smartphone, Mail, Edit2, Trash2, Tag } from "lucide-react";
 import { useState } from "react";
 
-export default function Profile() {
+interface Session {
+  id: string;
+  name: string;
+  description: string;
+  theme: string;
+  dailyTargetMinutes: number;
+  todayMinutes?: number;
+}
+
+interface ProfileProps {
+  sessions: Session[];
+  setSessions: (sessions: Session[]) => void;
+}
+
+export default function Profile({ sessions, setSessions }: ProfileProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
   const [streakReminder, setStreakReminder] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   const handleEnableNotifications = async () => {
     if ("Notification" in window && "serviceWorker" in navigator) {
       const permission = await Notification.requestPermission();
       setNotificationsEnabled(permission === "granted");
       console.log("Notification permission:", permission);
+    }
+  };
+
+  const handleEditSession = (session: Session) => {
+    setSelectedSession(session);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveSession = (
+    id: string,
+    updates: {
+      name: string;
+      description: string;
+      theme: string;
+      dailyTargetMinutes: number;
+    }
+  ) => {
+    setSessions(
+      sessions.map((s) =>
+        s.id === id
+          ? { ...s, ...updates }
+          : s
+      )
+    );
+  };
+
+  const handleDeleteClick = (session: Session) => {
+    setSelectedSession(session);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedSession) {
+      setSessions(sessions.filter((s) => s.id !== selectedSession.id));
+      setDeleteDialogOpen(false);
+      setSelectedSession(null);
     }
   };
 
@@ -122,6 +178,59 @@ export default function Profile() {
           </Card>
         </div>
 
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Manage Sessions</h3>
+          <Card className="divide-y">
+            {sessions.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">
+                No study sessions yet. Create one from the Study tab.
+              </div>
+            ) : (
+              sessions.map((session) => (
+                <div key={session.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h4 className="font-medium" data-testid={`text-manage-session-${session.id}`}>
+                          {session.name}
+                        </h4>
+                        <Badge variant="outline" className="gap-1">
+                          <Tag className="h-3 w-3" />
+                          {session.theme}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {session.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Daily target: {session.dailyTargetMinutes} minutes
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => handleEditSession(session)}
+                        data-testid={`button-edit-session-${session.id}`}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => handleDeleteClick(session)}
+                        data-testid={`button-delete-session-${session.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </Card>
+        </div>
+
         <Card className="p-4">
           <div className="flex items-start gap-3">
             <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -134,6 +243,20 @@ export default function Profile() {
           </div>
         </Card>
       </main>
+
+      <EditSessionDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        session={selectedSession}
+        onSave={handleSaveSession}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        sessionName={selectedSession?.name || ""}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
