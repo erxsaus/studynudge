@@ -1,12 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, CheckCircle2, BookOpen } from "lucide-react";
+import { Clock, Play, CheckCircle2, BookOpen, Tag } from "lucide-react";
 
 interface StudySessionCardProps {
   id: string;
   name: string;
   description: string;
+  theme?: string;
   dailyTargetMinutes: number;
   todayMinutes?: number;
   onStart: () => void;
@@ -16,6 +17,7 @@ interface StudySessionCardProps {
 export default function StudySessionCard({
   name,
   description,
+  theme,
   dailyTargetMinutes,
   todayMinutes = 0,
   onStart,
@@ -28,10 +30,16 @@ export default function StudySessionCard({
     <Card className="p-4" data-testid={`card-session-${name.toLowerCase().replace(/\s+/g, '-')}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-semibold text-foreground truncate" data-testid="text-session-name">
               {name}
             </h3>
+            {theme && (
+              <Badge variant="outline" className="gap-1">
+                <Tag className="h-3 w-3" />
+                {theme}
+              </Badge>
+            )}
             {isCompleted && (
               <CheckCircle2 className="h-4 w-4 text-chart-2 flex-shrink-0" />
             )}

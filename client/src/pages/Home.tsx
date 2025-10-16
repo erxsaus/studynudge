@@ -19,6 +19,7 @@ export default function Home() {
       id: "1",
       name: "Mathematics",
       description: "Advanced calculus and linear algebra practice",
+      theme: "School",
       dailyTargetMinutes: 60,
       todayMinutes: 30,
     },
@@ -26,6 +27,7 @@ export default function Home() {
       id: "2",
       name: "Spanish",
       description: "Vocabulary building and conversation practice",
+      theme: "Personal Development",
       dailyTargetMinutes: 45,
       todayMinutes: 45,
     },
@@ -33,6 +35,7 @@ export default function Home() {
       id: "3",
       name: "Web Development",
       description: "Learning React and TypeScript fundamentals",
+      theme: "Career",
       dailyTargetMinutes: 90,
       todayMinutes: 20,
     },
@@ -41,6 +44,7 @@ export default function Home() {
   const handleCreateSession = (newSession: {
     name: string;
     description: string;
+    theme: string;
     dailyTargetMinutes: number;
   }) => {
     setSessions([
@@ -86,14 +90,28 @@ export default function Home() {
             onAction={() => setCreateDialogOpen(true)}
           />
         ) : (
-          <div className="space-y-4">
-            {sessions.map((session) => (
-              <StudySessionCard
-                key={session.id}
-                {...session}
-                onStart={() => handleStartSession(session.id)}
-                onOpenNotes={() => handleOpenNotes({ id: session.id, name: session.name })}
-              />
+          <div className="space-y-6">
+            {Array.from(new Set(sessions.map(s => s.theme))).map(theme => (
+              <div key={theme}>
+                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span>{theme}</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({sessions.filter(s => s.theme === theme).length})
+                  </span>
+                </h2>
+                <div className="space-y-3">
+                  {sessions
+                    .filter(s => s.theme === theme)
+                    .map((session) => (
+                      <StudySessionCard
+                        key={session.id}
+                        {...session}
+                        onStart={() => handleStartSession(session.id)}
+                        onOpenNotes={() => handleOpenNotes({ id: session.id, name: session.name })}
+                      />
+                    ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

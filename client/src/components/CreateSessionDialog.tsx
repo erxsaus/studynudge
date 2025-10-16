@@ -17,6 +17,7 @@ interface CreateSessionDialogProps {
   onCreate: (session: {
     name: string;
     description: string;
+    theme: string;
     dailyTargetMinutes: number;
   }) => void;
 }
@@ -28,6 +29,7 @@ export default function CreateSessionDialog({
 }: CreateSessionDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [theme, setTheme] = useState("");
   const [targetMinutes, setTargetMinutes] = useState("30");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,10 +37,12 @@ export default function CreateSessionDialog({
     onCreate({
       name,
       description,
+      theme,
       dailyTargetMinutes: parseInt(targetMinutes),
     });
     setName("");
     setDescription("");
+    setTheme("");
     setTargetMinutes("30");
     onOpenChange(false);
   };
@@ -62,6 +66,17 @@ export default function CreateSessionDialog({
               placeholder="e.g., Mathematics"
               required
               data-testid="input-session-name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="theme">Theme</Label>
+            <Input
+              id="theme"
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              placeholder="e.g., School, Personal Development, Career"
+              required
+              data-testid="input-session-theme"
             />
           </div>
           <div>
