@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, CheckCircle2 } from "lucide-react";
+import { Clock, Play, CheckCircle2, BookOpen } from "lucide-react";
 
 interface StudySessionCardProps {
   id: string;
@@ -10,6 +10,7 @@ interface StudySessionCardProps {
   dailyTargetMinutes: number;
   todayMinutes?: number;
   onStart: () => void;
+  onOpenNotes: () => void;
 }
 
 export default function StudySessionCard({
@@ -18,6 +19,7 @@ export default function StudySessionCard({
   dailyTargetMinutes,
   todayMinutes = 0,
   onStart,
+  onOpenNotes,
 }: StudySessionCardProps) {
   const progress = Math.min((todayMinutes / dailyTargetMinutes) * 100, 100);
   const isCompleted = todayMinutes >= dailyTargetMinutes;
@@ -47,14 +49,24 @@ export default function StudySessionCard({
             </span>
           </div>
         </div>
-        <Button
-          size="icon"
-          variant={isCompleted ? "secondary" : "default"}
-          onClick={onStart}
-          data-testid="button-start-session"
-        >
-          <Play className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={onOpenNotes}
+            data-testid="button-open-notes"
+          >
+            <BookOpen className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant={isCompleted ? "secondary" : "default"}
+            onClick={onStart}
+            data-testid="button-start-session"
+          >
+            <Play className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
         <div

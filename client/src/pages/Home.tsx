@@ -3,11 +3,17 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StudySessionCard from "@/components/StudySessionCard";
 import CreateSessionDialog from "@/components/CreateSessionDialog";
+import StudyNotesDialog from "@/components/StudyNotesDialog";
 import EmptyState from "@/components/EmptyState";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Home() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [sessions, setSessions] = useState([
     {
       id: "1",
@@ -51,6 +57,15 @@ export default function Home() {
     console.log("Start session:", sessionId);
   };
 
+  const handleOpenNotes = (session: { id: string; name: string }) => {
+    setSelectedSession(session);
+    setNotesDialogOpen(true);
+  };
+
+  const handleSaveNotes = (content: string, media: File[]) => {
+    console.log("Saved notes for", selectedSession?.name, content, media);
+  };
+
   return (
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
@@ -77,6 +92,7 @@ export default function Home() {
                 key={session.id}
                 {...session}
                 onStart={() => handleStartSession(session.id)}
+                onOpenNotes={() => handleOpenNotes({ id: session.id, name: session.name })}
               />
             ))}
           </div>
@@ -97,6 +113,15 @@ export default function Home() {
         onOpenChange={setCreateDialogOpen}
         onCreate={handleCreateSession}
       />
+
+      {selectedSession && (
+        <StudyNotesDialog
+          open={notesDialogOpen}
+          onOpenChange={setNotesDialogOpen}
+          sessionName={selectedSession.name}
+          onSave={handleSaveNotes}
+        />
+      )}
     </div>
   );
 }
