@@ -8,6 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import EditSessionDialog from "@/components/EditSessionDialog";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import UserManagement from "@/components/UserManagement";
+import BadgeSystem from "@/components/BadgeSystem";
 import { useToast } from "@/hooks/use-toast";
 import { exportSessionsData, importSessionsData } from "@/lib/storage";
 import { Bell, BellOff, Smartphone, Mail, Edit2, Trash2, Tag, Download, Upload } from "lucide-react";
@@ -178,6 +179,8 @@ export default function Profile({
           onSwitchUser={onSwitchUser}
           onDeleteUser={onDeleteUser}
         />
+
+        <BadgeSystem currentStreak={45} />
 
         <div>
           <h3 className="text-lg font-semibold mb-3">Notifications</h3>
