@@ -18,12 +18,13 @@ interface Session {
 }
 
 interface HomeProps {
-  setActiveSession: (session: { name: string; targetMinutes: number }) => void;
+  setActiveSession: (session: { name: string; targetMinutes: number; sessionId: string }) => void;
   sessions: Session[];
   setSessions: (sessions: Session[]) => void;
+  onSaveStudyActivity: (sessionId: string, sessionName: string, duration: number, notes: string, media: File[], date: string) => void;
 }
 
-export default function Home({ setActiveSession, sessions, setSessions }: HomeProps) {
+export default function Home({ setActiveSession, sessions, setSessions, onSaveStudyActivity }: HomeProps) {
   const [, setLocation] = useLocation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
@@ -54,6 +55,7 @@ export default function Home({ setActiveSession, sessions, setSessions }: HomePr
       setActiveSession({
         name: session.name,
         targetMinutes: session.dailyTargetMinutes,
+        sessionId: session.id,
       });
       setLocation("/timer");
     }
@@ -65,7 +67,10 @@ export default function Home({ setActiveSession, sessions, setSessions }: HomePr
   };
 
   const handleSaveNotes = (content: string, media: File[], date: string) => {
-    console.log("Saved notes for", selectedSession?.name, content, media, "for date:", date);
+    if (selectedSession) {
+      onSaveStudyActivity(selectedSession.id, selectedSession.name, 0, content, media, date);
+      setNotesDialogOpen(false);
+    }
   };
 
   return (

@@ -38,6 +38,7 @@ interface ProfileProps {
   onAddUser: (name: string, photo?: string) => void;
   onSwitchUser: (userId: string) => void;
   onDeleteUser: (userId: string) => void;
+  currentStreak: number;
 }
 
 export default function Profile({ 
@@ -48,6 +49,7 @@ export default function Profile({
   onAddUser,
   onSwitchUser,
   onDeleteUser,
+  currentStreak,
 }: ProfileProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -180,7 +182,7 @@ export default function Profile({
           onDeleteUser={onDeleteUser}
         />
 
-        <BadgeSystem currentStreak={45} />
+        <BadgeSystem currentStreak={currentStreak} />
 
         <div>
           <h3 className="text-lg font-semibold mb-3">Notifications</h3>

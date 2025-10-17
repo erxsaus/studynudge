@@ -18,6 +18,9 @@ import {
   getCurrentUser,
   getUserSessions,
   setUserSessions,
+  addStudyActivity,
+  getTodayMinutes,
+  calculateStreak,
 } from "./lib/userStorage";
 
 interface Session {
@@ -46,9 +49,11 @@ function Router({
   onAddUser,
   onSwitchUser,
   onDeleteUser,
+  onSaveStudyActivity,
+  currentStreak,
 }: { 
-  activeSession: { name: string; targetMinutes: number } | null;
-  setActiveSession: (session: { name: string; targetMinutes: number } | null) => void;
+  activeSession: { name: string; targetMinutes: number; sessionId: string } | null;
+  setActiveSession: (session: { name: string; targetMinutes: number; sessionId: string } | null) => void;
   sessions: Session[];
   setSessions: (sessions: Session[]) => void;
   currentUser: User | null;
@@ -56,6 +61,8 @@ function Router({
   onAddUser: (name: string, photo?: string) => void;
   onSwitchUser: (userId: string) => void;
   onDeleteUser: (userId: string) => void;
+  onSaveStudyActivity: (sessionId: string, sessionName: string, duration: number, notes: string, media: File[], date: string) => void;
+  currentStreak: number;
 }) {
   return (
     <Switch>
@@ -64,10 +71,15 @@ function Router({
           setActiveSession={setActiveSession} 
           sessions={sessions}
           setSessions={setSessions}
+          onSaveStudyActivity={onSaveStudyActivity}
         />
       </Route>
       <Route path="/timer">
-        <Timer activeSession={activeSession} setActiveSession={setActiveSession} />
+        <Timer 
+          activeSession={activeSession} 
+          setActiveSession={setActiveSession}
+          onSaveStudyActivity={onSaveStudyActivity}
+        />
       </Route>
       <Route path="/progress" component={Progress} />
       <Route path="/profile">
@@ -79,6 +91,7 @@ function Router({
           onAddUser={onAddUser}
           onSwitchUser={onSwitchUser}
           onDeleteUser={onDeleteUser}
+          currentStreak={currentStreak}
         />
       </Route>
       <Route component={NotFound} />
@@ -91,22 +104,58 @@ function App() {
   const [activeSession, setActiveSession] = useState<{
     name: string;
     targetMinutes: number;
+    sessionId: string;
   } | null>(null);
 
   const currentUser = getCurrentUser(userData);
   const [sessions, setSessions] = useState<Session[]>(() => {
     if (currentUser) {
-      return getUserSessions(userData, currentUser.id);
+      const userSessions = getUserSessions(userData, currentUser.id);
+      return userSessions.map(session => ({
+        ...session,
+        todayMinutes: getTodayMinutes(userData, currentUser.id, session.id),
+      }));
     }
     return [];
   });
 
   useEffect(() => {
     if (currentUser) {
-      setUserSessions(userData, currentUser.id, sessions);
+      const sessionsWithoutTodayMinutes = sessions.map(({ todayMinutes, ...session }) => session);
+      setUserSessions(userData, currentUser.id, sessionsWithoutTodayMinutes);
       saveUserData(userData);
     }
   }, [sessions, currentUser, userData]);
+
+  const handleSaveStudyActivity = (
+    sessionId: string,
+    sessionName: string,
+    durationMinutes: number,
+    notes: string,
+    media: File[],
+    date: string
+  ) => {
+    if (!currentUser) return;
+
+    const mediaUrls = media.map(file => URL.createObjectURL(file));
+    
+    addStudyActivity(userData, currentUser.id, {
+      sessionId,
+      sessionName,
+      date,
+      durationMinutes,
+      notes,
+      media: mediaUrls,
+    });
+    
+    saveUserData(userData);
+    
+    setSessions(prev => prev.map(s => 
+      s.id === sessionId 
+        ? { ...s, todayMinutes: getTodayMinutes(userData, currentUser.id, sessionId) }
+        : s
+    ));
+  };
 
   const handleWelcomeComplete = (name: string, photo?: string) => {
     const newUser = createUser(name, photo);
@@ -114,6 +163,7 @@ function App() {
       users: [newUser],
       currentUserId: newUser.id,
       sessions: { [newUser.id]: [] },
+      activities: { [newUser.id]: [] },
     };
     setUserData(newUserData);
     saveUserData(newUserData);
@@ -127,6 +177,7 @@ function App() {
       users: [...userData.users, newUser],
       currentUserId: newUser.id,
       sessions: { ...userData.sessions, [newUser.id]: [] },
+      activities: { ...userData.activities, [newUser.id]: [] },
     };
     setUserData(newUserData);
     saveUserData(newUserData);
@@ -147,7 +198,9 @@ function App() {
   const handleDeleteUser = (userId: string) => {
     const remainingUsers = userData.users.filter((u) => u.id !== userId);
     const newSessions = { ...userData.sessions };
+    const newActivities = { ...userData.activities };
     delete newSessions[userId];
+    delete newActivities[userId];
     
     const newCurrentUserId = userId === userData.currentUserId
       ? remainingUsers[0]?.id || null
@@ -157,6 +210,7 @@ function App() {
       users: remainingUsers,
       currentUserId: newCurrentUserId,
       sessions: newSessions,
+      activities: newActivities,
     };
     
     setUserData(newUserData);
@@ -194,6 +248,8 @@ function App() {
             onAddUser={handleAddUser}
             onSwitchUser={handleSwitchUser}
             onDeleteUser={handleDeleteUser}
+            onSaveStudyActivity={handleSaveStudyActivity}
+            currentStreak={currentUser ? calculateStreak(userData, currentUser.id) : 0}
           />
           <BottomNav />
         </div>

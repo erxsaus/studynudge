@@ -5,34 +5,43 @@ import EmptyState from "@/components/EmptyState";
 import ThemeToggle from "@/components/ThemeToggle";
 
 interface TimerProps {
-  activeSession: { name: string; targetMinutes: number } | null;
-  setActiveSession: (session: { name: string; targetMinutes: number } | null) => void;
+  activeSession: { name: string; targetMinutes: number; sessionId: string } | null;
+  setActiveSession: (session: { name: string; targetMinutes: number; sessionId: string } | null) => void;
+  onSaveStudyActivity: (sessionId: string, sessionName: string, duration: number, notes: string, media: File[], date: string) => void;
 }
 
-export default function Timer({ activeSession, setActiveSession }: TimerProps) {
+export default function Timer({ activeSession, setActiveSession, onSaveStudyActivity }: TimerProps) {
   const [showLogForm, setShowLogForm] = useState(false);
   const [completedMinutes, setCompletedMinutes] = useState(0);
+  const [completedSession, setCompletedSession] = useState<{ name: string; sessionId: string } | null>(null);
 
   const handleComplete = (minutes: number) => {
-    setCompletedMinutes(minutes);
-    setShowLogForm(true);
-    setActiveSession(null);
+    if (activeSession) {
+      setCompletedMinutes(minutes);
+      setCompletedSession({ name: activeSession.name, sessionId: activeSession.sessionId });
+      setShowLogForm(true);
+      setActiveSession(null);
+    }
   };
 
   const handleSaveLog = (content: string, media: File[], date: string) => {
-    console.log("Saved log:", content, media, "for date:", date);
-    setShowLogForm(false);
+    if (completedSession) {
+      onSaveStudyActivity(completedSession.sessionId, completedSession.name, completedMinutes, content, media, date);
+      setShowLogForm(false);
+      setCompletedSession(null);
+    }
   };
 
   const handleCancel = () => {
     setActiveSession(null);
     setShowLogForm(false);
+    setCompletedSession(null);
   };
 
-  if (showLogForm && activeSession) {
+  if (showLogForm && completedSession) {
     return (
       <StudyLogForm
-        sessionName={activeSession.name}
+        sessionName={completedSession.name}
         minutesCompleted={completedMinutes}
         onSave={handleSaveLog}
         onCancel={handleCancel}
