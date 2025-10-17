@@ -126,11 +126,11 @@ export default function FocusTimer({
               </>
             )}
           </Button>
-          {minutes > 0 && (
+          {seconds > 0 && (
             <Button
               size="lg"
               variant="default"
-              onClick={() => onComplete(minutes)}
+              onClick={() => onComplete(Math.max(1, minutes))}
               data-testid="button-complete-timer"
             >
               <Check className="h-5 w-5 mr-2" />
