@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import ThemeToggle from "@/components/ThemeToggle";
 import EditSessionDialog from "@/components/EditSessionDialog";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import UserManagement from "@/components/UserManagement";
 import { useToast } from "@/hooks/use-toast";
 import { exportSessionsData, importSessionsData } from "@/lib/storage";
 import { Bell, BellOff, Smartphone, Mail, Edit2, Trash2, Tag, Download, Upload } from "lucide-react";
@@ -20,12 +22,32 @@ interface Session {
   todayMinutes?: number;
 }
 
+interface User {
+  id: string;
+  name: string;
+  photo?: string;
+  createdAt: string;
+}
+
 interface ProfileProps {
   sessions: Session[];
   setSessions: (sessions: Session[]) => void;
+  currentUser: User | null;
+  users: User[];
+  onAddUser: (name: string, photo?: string) => void;
+  onSwitchUser: (userId: string) => void;
+  onDeleteUser: (userId: string) => void;
 }
 
-export default function Profile({ sessions, setSessions }: ProfileProps) {
+export default function Profile({ 
+  sessions, 
+  setSessions,
+  currentUser,
+  users,
+  onAddUser,
+  onSwitchUser,
+  onDeleteUser,
+}: ProfileProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
   const [streakReminder, setStreakReminder] = useState(true);
@@ -129,17 +151,33 @@ export default function Profile({ sessions, setSessions }: ProfileProps) {
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         <Card className="p-6">
           <div className="flex items-center gap-4 mb-6">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary">S</span>
-            </div>
+            <Avatar className="h-16 w-16">
+              {currentUser?.photo ? (
+                <AvatarImage src={currentUser.photo} alt={currentUser.name} />
+              ) : (
+                <AvatarFallback className="text-2xl">
+                  {currentUser?.name.charAt(0).toUpperCase() || "?"}
+                </AvatarFallback>
+              )}
+            </Avatar>
             <div>
               <h2 className="text-xl font-semibold" data-testid="text-user-name">
-                Study User
+                {currentUser?.name || "User"}
               </h2>
-              <p className="text-sm text-muted-foreground">Member since Oct 2025</p>
+              <p className="text-sm text-muted-foreground">
+                Member since {currentUser ? new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+              </p>
             </div>
           </div>
         </Card>
+
+        <UserManagement
+          users={users}
+          currentUserId={currentUser?.id || null}
+          onAddUser={onAddUser}
+          onSwitchUser={onSwitchUser}
+          onDeleteUser={onDeleteUser}
+        />
 
         <div>
           <h3 className="text-lg font-semibold mb-3">Notifications</h3>
