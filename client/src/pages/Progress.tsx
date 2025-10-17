@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import SessionProgressCard from "@/components/SessionProgressCard";
 import StudyCalendar from "@/components/StudyCalendar";
@@ -6,91 +6,123 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { loadUserData, getUserActivities } from "@/lib/userStorage";
 
-export default function Progress() {
+interface Session {
+  id: string;
+  name: string;
+  description: string;
+  theme: string;
+  dailyTargetMinutes: number;
+  todayMinutes?: number;
+}
+
+interface User {
+  id: string;
+  name: string;
+  photo?: string;
+  createdAt: string;
+}
+
+interface ProgressProps {
+  sessions: Session[];
+  currentUser: User | null;
+}
+
+const SESSION_COLORS = [
+  "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899",
+  "#06b6d4", "#f97316", "#14b8a6", "#a855f7", "#f43f5e"
+];
+
+export default function Progress({ sessions, currentUser }: ProgressProps) {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
-  // todo: remove mock functionality
-  const sessions = [
-    { 
-      id: "1", 
-      name: "Mathematics", 
-      theme: "School",
-      totalMinutes: 420, 
-      sessionsCount: 8, 
-      streak: 5,
-      color: "#3b82f6"
-    },
-    { 
-      id: "2", 
-      name: "Spanish", 
-      theme: "Personal Development",
-      totalMinutes: 315, 
-      sessionsCount: 7, 
-      streak: 3,
-      color: "#10b981"
-    },
-    { 
-      id: "3", 
-      name: "Web Development", 
-      theme: "Career",
-      totalMinutes: 540, 
-      sessionsCount: 6, 
-      streak: 4,
-      color: "#f59e0b"
-    },
-  ];
+  const sessionColors = useMemo(() => {
+    const colorMap: Record<string, string> = {};
+    sessions.forEach((session, index) => {
+      colorMap[session.id] = SESSION_COLORS[index % SESSION_COLORS.length];
+    });
+    return colorMap;
+  }, [sessions]);
 
-  // todo: remove mock functionality
-  const allActivities = [
-    {
-      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      sessions: [
-        { name: "Mathematics", minutes: 60, notes: "Learned about derivatives and integration. The chain rule is starting to make more sense now.", color: "#3b82f6" },
-        { name: "Spanish", minutes: 45, notes: "Practiced conjugating irregular verbs. Need to review ser and estar tomorrow.", color: "#10b981" },
-      ],
-    },
-    {
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      sessions: [
-        { name: "Web Development", minutes: 90, notes: "Built a React component with hooks. useState and useEffect are powerful!", color: "#f59e0b" },
-      ],
-    },
-    {
-      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      sessions: [
-        { name: "Mathematics", minutes: 45, color: "#3b82f6" },
-        { name: "Spanish", minutes: 30, notes: "Vocabulary practice - learned 20 new words about food and cooking.", color: "#10b981" },
-        { name: "Web Development", minutes: 60, color: "#f59e0b" },
-      ],
-    },
-    {
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      sessions: [
-        { name: "Mathematics", minutes: 60, notes: "Worked through calculus problems. Still struggling with optimization problems.", color: "#3b82f6" },
-      ],
-    },
-    {
-      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      sessions: [
-        { name: "Spanish", minutes: 50, color: "#10b981" },
-        { name: "Web Development", minutes: 75, notes: "Learned about TypeScript interfaces and types. Much cleaner code now!", color: "#f59e0b" },
-      ],
-    },
-  ];
+  const userData = loadUserData();
+  const activities = currentUser ? getUserActivities(userData, currentUser.id) : [];
 
-  const getSessionActivities = (sessionName: string) => {
+  const sessionsWithStats = useMemo(() => {
+    return sessions.map(session => {
+      const sessionActivities = activities.filter(a => a.sessionId === session.id);
+      const totalMinutes = sessionActivities.reduce((sum, a) => sum + a.durationMinutes, 0);
+      const uniqueDates = new Set(sessionActivities.map(a => a.date));
+      
+      const sortedDates = Array.from(uniqueDates).sort().reverse();
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      for (const dateStr of sortedDates) {
+        const activityDate = new Date(dateStr);
+        activityDate.setHours(0, 0, 0, 0);
+        const daysDiff = Math.floor((today.getTime() - activityDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff === streak) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      
+      return {
+        id: session.id,
+        name: session.name,
+        theme: session.theme,
+        totalMinutes,
+        sessionsCount: sessionActivities.length,
+        streak,
+        color: sessionColors[session.id],
+      };
+    });
+  }, [sessions, activities, sessionColors]);
+
+  const allActivities = useMemo(() => {
+    const activityMap: Record<string, any[]> = {};
+    
+    activities.forEach(activity => {
+      if (!activityMap[activity.date]) {
+        activityMap[activity.date] = [];
+      }
+      activityMap[activity.date].push({
+        name: activity.sessionName,
+        minutes: activity.durationMinutes,
+        notes: activity.notes,
+        color: sessionColors[activity.sessionId],
+      });
+    });
+    
+    return Object.entries(activityMap)
+      .map(([date, sessions]) => ({
+        date,
+        sessions,
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [activities, sessionColors]);
+
+  const getSessionActivities = (sessionId: string) => {
     return allActivities
       .map(activity => ({
         ...activity,
-        sessions: activity.sessions.filter(s => s.name === sessionName),
+        sessions: activity.sessions.filter(s => {
+          const matchingActivity = activities.find(a => 
+            a.date === activity.date && a.sessionName === s.name
+          );
+          return matchingActivity?.sessionId === sessionId;
+        }),
       }))
       .filter(activity => activity.sessions.length > 0);
   };
 
-  const selectedSessionData = sessions.find(s => s.id === selectedSession);
+  const selectedSessionData = sessionsWithStats.find(s => s.id === selectedSession);
   const sessionActivities = selectedSession && selectedSessionData 
-    ? getSessionActivities(selectedSessionData.name)
+    ? getSessionActivities(selectedSession)
     : allActivities;
 
   return (
@@ -123,16 +155,16 @@ export default function Progress() {
             <div>
               <h2 className="text-lg font-semibold mb-4">Study Sessions</h2>
               <div className="space-y-4">
-                {Array.from(new Set(sessions.map(s => s.theme))).map(theme => (
+                {Array.from(new Set(sessionsWithStats.map(s => s.theme))).map(theme => (
                   <div key={theme}>
                     <h3 className="text-base font-medium mb-3 flex items-center gap-2 text-muted-foreground">
                       <span>{theme}</span>
                       <span className="text-sm font-normal">
-                        ({sessions.filter(s => s.theme === theme).length})
+                        ({sessionsWithStats.filter(s => s.theme === theme).length})
                       </span>
                     </h3>
                     <div className="space-y-3">
-                      {sessions
+                      {sessionsWithStats
                         .filter(s => s.theme === theme)
                         .map((session) => (
                           <SessionProgressCard

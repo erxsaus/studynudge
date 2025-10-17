@@ -81,7 +81,12 @@ function Router({
           onSaveStudyActivity={onSaveStudyActivity}
         />
       </Route>
-      <Route path="/progress" component={Progress} />
+      <Route path="/progress">
+        <Progress 
+          sessions={sessions}
+          currentUser={currentUser}
+        />
+      </Route>
       <Route path="/profile">
         <Profile 
           sessions={sessions} 
