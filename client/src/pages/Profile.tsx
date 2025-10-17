@@ -2,11 +2,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import ThemeToggle from "@/components/ThemeToggle";
 import EditSessionDialog from "@/components/EditSessionDialog";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
-import { Bell, BellOff, Smartphone, Mail, Edit2, Trash2, Tag } from "lucide-react";
-import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { exportSessionsData, importSessionsData } from "@/lib/storage";
+import { Bell, BellOff, Smartphone, Mail, Edit2, Trash2, Tag, Download, Upload } from "lucide-react";
+import { useState, useRef } from "react";
 
 interface Session {
   id: string;
@@ -29,6 +32,8 @@ export default function Profile({ sessions, setSessions }: ProfileProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleEnableNotifications = async () => {
     if ("Notification" in window && "serviceWorker" in navigator) {
@@ -71,6 +76,42 @@ export default function Profile({ sessions, setSessions }: ProfileProps) {
       setSessions(sessions.filter((s) => s.id !== selectedSession.id));
       setDeleteDialogOpen(false);
       setSelectedSession(null);
+    }
+  };
+
+  const handleExport = () => {
+    exportSessionsData(sessions);
+    toast({
+      title: "Data Exported",
+      description: "Your study sessions have been downloaded as a backup file.",
+    });
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const importedSessions = await importSessionsData(file);
+      setSessions(importedSessions);
+      toast({
+        title: "Data Imported",
+        description: `Successfully imported ${importedSessions.length} study session(s).`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: "Failed to import data. Please check the file format.",
+        variant: "destructive",
+      });
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -173,6 +214,48 @@ export default function Profile({ sessions, setSessions }: ProfileProps) {
                 <Button variant="outline" data-testid="button-install-pwa">
                   Install App
                 </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Data Management</h3>
+          <Card className="p-4">
+            <div className="space-y-4">
+              <div>
+                <p className="font-medium mb-1">Backup & Restore</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Export your data to backup or migrate to another device
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleExport}
+                    className="gap-2"
+                    data-testid="button-export-data"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export Data
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleImportClick}
+                    className="gap-2"
+                    data-testid="button-import-data"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Import Data
+                  </Button>
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={handleImport}
+                    className="hidden"
+                    data-testid="input-import-file"
+                  />
+                </div>
               </div>
             </div>
           </Card>

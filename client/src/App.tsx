@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import Timer from "@/pages/Timer";
 import Progress from "@/pages/Progress";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
+import { loadSessionsFromStorage, saveSessionsToStorage } from "./lib/storage";
 
 interface Session {
   id: string;
@@ -58,7 +59,7 @@ function App() {
     targetMinutes: number;
   } | null>(null);
 
-  const [sessions, setSessions] = useState<Session[]>([
+  const defaultSessions: Session[] = [
     {
       id: "1",
       name: "Mathematics",
@@ -83,7 +84,16 @@ function App() {
       dailyTargetMinutes: 90,
       todayMinutes: 20,
     },
-  ]);
+  ];
+
+  const [sessions, setSessions] = useState<Session[]>(() => {
+    const stored = loadSessionsFromStorage();
+    return stored.length > 0 ? stored : defaultSessions;
+  });
+
+  useEffect(() => {
+    saveSessionsToStorage(sessions);
+  }, [sessions]);
 
   return (
     <QueryClientProvider client={queryClient}>
