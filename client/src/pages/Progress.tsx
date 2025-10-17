@@ -3,10 +3,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import SessionProgressCard from "@/components/SessionProgressCard";
 import StudyCalendar from "@/components/StudyCalendar";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { loadUserData, getUserActivities } from "@/lib/userStorage";
 
 interface Session {
   id: string;
@@ -17,16 +15,9 @@ interface Session {
   todayMinutes?: number;
 }
 
-interface User {
-  id: string;
-  name: string;
-  photo?: string;
-  createdAt: string;
-}
-
 interface ProgressProps {
   sessions: Session[];
-  currentUser: User | null;
+  activities: any[];
 }
 
 const SESSION_COLORS = [
@@ -34,7 +25,7 @@ const SESSION_COLORS = [
   "#06b6d4", "#f97316", "#14b8a6", "#a855f7", "#f43f5e"
 ];
 
-export default function Progress({ sessions, currentUser }: ProgressProps) {
+export default function Progress({ sessions, activities }: ProgressProps) {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   const sessionColors = useMemo(() => {
@@ -44,9 +35,6 @@ export default function Progress({ sessions, currentUser }: ProgressProps) {
     });
     return colorMap;
   }, [sessions]);
-
-  const userData = loadUserData();
-  const activities = currentUser ? getUserActivities(userData, currentUser.id) : [];
 
   const sessionsWithStats = useMemo(() => {
     return sessions.map(session => {

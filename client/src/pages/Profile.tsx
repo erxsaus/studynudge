@@ -2,17 +2,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import ThemeToggle from "@/components/ThemeToggle";
 import EditSessionDialog from "@/components/EditSessionDialog";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
-import UserManagement from "@/components/UserManagement";
 import BadgeSystem from "@/components/BadgeSystem";
 import { useToast } from "@/hooks/use-toast";
-import { exportSessionsData, importSessionsData } from "@/lib/storage";
-import { Bell, BellOff, Smartphone, Mail, Edit2, Trash2, Tag, Download, Upload } from "lucide-react";
-import { useState, useRef } from "react";
+import { Bell, BellOff, Smartphone, LogOut, Edit2, Trash2, Tag } from "lucide-react";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import type { User } from "@shared/schema";
 
 interface Session {
   id: string;
@@ -23,33 +23,18 @@ interface Session {
   todayMinutes?: number;
 }
 
-interface User {
-  id: string;
-  name: string;
-  photo?: string;
-  createdAt: string;
-}
-
 interface ProfileProps {
   sessions: Session[];
-  setSessions: (sessions: Session[]) => void;
   currentUser: User | null;
-  users: User[];
-  onAddUser: (name: string, photo?: string) => void;
-  onSwitchUser: (userId: string) => void;
-  onDeleteUser: (userId: string) => void;
   currentStreak: number;
+  refetchSessions: () => void;
 }
 
 export default function Profile({ 
   sessions, 
-  setSessions,
   currentUser,
-  users,
-  onAddUser,
-  onSwitchUser,
-  onDeleteUser,
   currentStreak,
+  refetchSessions,
 }: ProfileProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -57,16 +42,57 @@ export default function Profile({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleEnableNotifications = async () => {
     if ("Notification" in window && "serviceWorker" in navigator) {
       const permission = await Notification.requestPermission();
       setNotificationsEnabled(permission === "granted");
-      console.log("Notification permission:", permission);
     }
   };
+
+  const updateSessionMutation = useMutation({
+    mutationFn: async (data: { id: string; updates: Partial<Session> }) => {
+      return apiRequest("PATCH", `/api/sessions/${data.id}`, data.updates);
+    },
+    onSuccess: () => {
+      refetchSessions();
+      setEditDialogOpen(false);
+      toast({
+        title: "Session updated",
+        description: "Your study session has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update session. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/sessions/${id}`);
+    },
+    onSuccess: () => {
+      refetchSessions();
+      setDeleteDialogOpen(false);
+      setSelectedSession(null);
+      toast({
+        title: "Session deleted",
+        description: "Your study session has been deleted.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete session. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleEditSession = (session: Session) => {
     setSelectedSession(session);
@@ -82,13 +108,7 @@ export default function Profile({
       dailyTargetMinutes: number;
     }
   ) => {
-    setSessions(
-      sessions.map((s) =>
-        s.id === id
-          ? { ...s, ...updates }
-          : s
-      )
-    );
+    updateSessionMutation.mutate({ id, updates });
   };
 
   const handleDeleteClick = (session: Session) => {
@@ -98,46 +118,29 @@ export default function Profile({
 
   const handleConfirmDelete = () => {
     if (selectedSession) {
-      setSessions(sessions.filter((s) => s.id !== selectedSession.id));
-      setDeleteDialogOpen(false);
-      setSelectedSession(null);
+      deleteSessionMutation.mutate(selectedSession.id);
     }
   };
 
-  const handleExport = () => {
-    exportSessionsData(sessions);
-    toast({
-      title: "Data Exported",
-      description: "Your study sessions have been downloaded as a backup file.",
-    });
+  const handleLogout = () => {
+    window.location.href = "/api/logout";
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
+  const getUserDisplayName = () => {
+    if (!currentUser) return "User";
+    if (currentUser.firstName && currentUser.lastName) {
+      return `${currentUser.firstName} ${currentUser.lastName}`;
+    }
+    if (currentUser.firstName) return currentUser.firstName;
+    if (currentUser.email) return currentUser.email;
+    return "User";
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const importedSessions = await importSessionsData(file);
-      setSessions(importedSessions);
-      toast({
-        title: "Data Imported",
-        description: `Successfully imported ${importedSessions.length} study session(s).`,
-      });
-    } catch (error) {
-      toast({
-        title: "Import Failed",
-        description: "Failed to import data. Please check the file format.",
-        variant: "destructive",
-      });
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const getUserInitials = () => {
+    if (!currentUser) return "?";
+    if (currentUser.firstName) return currentUser.firstName.charAt(0).toUpperCase();
+    if (currentUser.email) return currentUser.email.charAt(0).toUpperCase();
+    return "?";
   };
 
   return (
@@ -155,32 +158,33 @@ export default function Profile({
         <Card className="p-6">
           <div className="flex items-center gap-4 mb-6">
             <Avatar className="h-16 w-16">
-              {currentUser?.photo ? (
-                <AvatarImage src={currentUser.photo} alt={currentUser.name} />
+              {currentUser?.profileImageUrl ? (
+                <AvatarImage src={currentUser.profileImageUrl} alt={getUserDisplayName()} />
               ) : (
                 <AvatarFallback className="text-2xl">
-                  {currentUser?.name.charAt(0).toUpperCase() || "?"}
+                  {getUserInitials()}
                 </AvatarFallback>
               )}
             </Avatar>
-            <div>
+            <div className="flex-1">
               <h2 className="text-xl font-semibold" data-testid="text-user-name">
-                {currentUser?.name || "User"}
+                {getUserDisplayName()}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Member since {currentUser ? new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                {currentUser?.email || ""}
               </p>
             </div>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="gap-2"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4" />
+              Log out
+            </Button>
           </div>
         </Card>
-
-        <UserManagement
-          users={users}
-          currentUserId={currentUser?.id || null}
-          onAddUser={onAddUser}
-          onSwitchUser={onSwitchUser}
-          onDeleteUser={onDeleteUser}
-        />
 
         <BadgeSystem currentStreak={currentStreak} />
 
@@ -263,48 +267,6 @@ export default function Profile({
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold mb-3">Data Management</h3>
-          <Card className="p-4">
-            <div className="space-y-4">
-              <div>
-                <p className="font-medium mb-1">Backup & Restore</p>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Export your data to backup or migrate to another device
-                </p>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleExport}
-                    className="gap-2"
-                    data-testid="button-export-data"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export Data
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleImportClick}
-                    className="gap-2"
-                    data-testid="button-import-data"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Import Data
-                  </Button>
-                  <Input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    onChange={handleImport}
-                    className="hidden"
-                    data-testid="input-import-file"
-                  />
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div>
           <h3 className="text-lg font-semibold mb-3">Manage Sessions</h3>
           <Card className="divide-y">
             {sessions.length === 0 ? (
@@ -356,18 +318,6 @@ export default function Profile({
             )}
           </Card>
         </div>
-
-        <Card className="p-4">
-          <div className="flex items-start gap-3">
-            <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium mb-1">Contact & Support</p>
-              <p className="text-sm text-muted-foreground">
-                Questions or feedback? We'd love to hear from you.
-              </p>
-            </div>
-          </div>
-        </Card>
       </main>
 
       <EditSessionDialog

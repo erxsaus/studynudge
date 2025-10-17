@@ -7,6 +7,9 @@ import CreateSessionDialog from "@/components/CreateSessionDialog";
 import StudyNotesDialog from "@/components/StudyNotesDialog";
 import EmptyState from "@/components/EmptyState";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Session {
   id: string;
@@ -20,11 +23,11 @@ interface Session {
 interface HomeProps {
   setActiveSession: (session: { name: string; targetMinutes: number; sessionId: string }) => void;
   sessions: Session[];
-  setSessions: (sessions: Session[]) => void;
   onSaveStudyActivity: (sessionId: string, sessionName: string, duration: number, notes: string, media: File[], date: string) => void;
+  refetchSessions: () => void;
 }
 
-export default function Home({ setActiveSession, sessions, setSessions, onSaveStudyActivity }: HomeProps) {
+export default function Home({ setActiveSession, sessions, onSaveStudyActivity, refetchSessions }: HomeProps) {
   const [, setLocation] = useLocation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
@@ -32,6 +35,33 @@ export default function Home({ setActiveSession, sessions, setSessions, onSaveSt
     id: string;
     name: string;
   } | null>(null);
+  const { toast } = useToast();
+
+  const createSessionMutation = useMutation({
+    mutationFn: async (newSession: {
+      name: string;
+      description: string;
+      theme: string;
+      dailyTargetMinutes: number;
+    }) => {
+      return apiRequest("POST", "/api/sessions", newSession);
+    },
+    onSuccess: () => {
+      refetchSessions();
+      setCreateDialogOpen(false);
+      toast({
+        title: "Session created",
+        description: "Your study session has been created successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create session. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleCreateSession = (newSession: {
     name: string;
@@ -39,14 +69,7 @@ export default function Home({ setActiveSession, sessions, setSessions, onSaveSt
     theme: string;
     dailyTargetMinutes: number;
   }) => {
-    setSessions([
-      ...sessions,
-      {
-        id: Date.now().toString(),
-        ...newSession,
-        todayMinutes: 0,
-      },
-    ]);
+    createSessionMutation.mutate(newSession);
   };
 
   const handleStartSession = (sessionId: string) => {
