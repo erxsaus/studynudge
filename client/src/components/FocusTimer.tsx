@@ -35,6 +35,18 @@ export default function FocusTimer({
   const remainingSeconds = seconds % 60;
   const progress = Math.min((minutes / targetMinutes) * 100, 100);
 
+  useEffect(() => {
+    if (minutes >= targetMinutes && isRunning) {
+      setIsRunning(false);
+      
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+      
+      onComplete(minutes);
+    }
+  }, [minutes, targetMinutes, isRunning, onComplete]);
+
   const formatTime = (mins: number, secs: number) => {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };

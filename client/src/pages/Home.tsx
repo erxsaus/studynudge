@@ -64,8 +64,8 @@ export default function Home({ setActiveSession, sessions, setSessions }: HomePr
     setNotesDialogOpen(true);
   };
 
-  const handleSaveNotes = (content: string, media: File[]) => {
-    console.log("Saved notes for", selectedSession?.name, content, media);
+  const handleSaveNotes = (content: string, media: File[], date: string) => {
+    console.log("Saved notes for", selectedSession?.name, content, media, "for date:", date);
   };
 
   return (

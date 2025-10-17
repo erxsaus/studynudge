@@ -8,13 +8,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Camera, Image as ImageIcon, X } from "lucide-react";
 
 interface StudyNotesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sessionName: string;
-  onSave: (content: string, media: File[]) => void;
+  onSave: (content: string, media: File[], date: string) => void;
 }
 
 export default function StudyNotesDialog({
@@ -23,7 +25,9 @@ export default function StudyNotesDialog({
   sessionName,
   onSave,
 }: StudyNotesDialogProps) {
+  const today = new Date().toISOString().split('T')[0];
   const [content, setContent] = useState("");
+  const [date, setDate] = useState(today);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,8 +41,9 @@ export default function StudyNotesDialog({
   };
 
   const handleSave = () => {
-    onSave(content, mediaFiles);
+    onSave(content, mediaFiles, date);
     setContent("");
+    setDate(new Date().toISOString().split('T')[0]);
     setMediaFiles([]);
     onOpenChange(false);
   };
@@ -54,6 +59,17 @@ export default function StudyNotesDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          <div>
+            <Label htmlFor="notes-date">Study Date</Label>
+            <Input
+              id="notes-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              data-testid="input-notes-date"
+            />
+          </div>
+
           <div>
             <label className="text-sm font-medium mb-2 block">
               What are you learning today?

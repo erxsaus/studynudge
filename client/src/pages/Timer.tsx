@@ -19,8 +19,8 @@ export default function Timer({ activeSession, setActiveSession }: TimerProps) {
     setActiveSession(null);
   };
 
-  const handleSaveLog = (content: string, media: File[]) => {
-    console.log("Saved log:", content, media);
+  const handleSaveLog = (content: string, media: File[], date: string) => {
+    console.log("Saved log:", content, media, "for date:", date);
     setShowLogForm(false);
   };
 
