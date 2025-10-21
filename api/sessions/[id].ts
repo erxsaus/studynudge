@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { requireAuth } from "../../server/vercelAuth";
-import { storage } from "../../server/storage";
-import { insertStudySessionSchema } from "../../shared/schema";
+import { requireAuth } from "../../server/vercelAuth.js";
+import { storage } from "../../server/storage.js";
+import { insertStudySessionSchema } from "../../shared/schema.js";
 
 async function handler(req: VercelRequest, res: VercelResponse, userId: string) {
   const { id } = req.query;

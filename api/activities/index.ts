@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { requireAuth } from "../../server/vercelAuth";
-import { storage } from "../../server/storage";
-import { insertStudyActivitySchema } from "../../shared/schema";
+import { requireAuth } from "../../server/vercelAuth.js";
+import { storage } from "../../server/storage.js";
+import { insertStudyActivitySchema } from "../../shared/schema.js";
 
 async function handler(req: VercelRequest, res: VercelResponse, userId: string) {
   if (req.method === "GET") {
