@@ -9,7 +9,7 @@ import {
   type StudyActivity,
   type InsertStudyActivity,
 } from "@shared/schema";
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {

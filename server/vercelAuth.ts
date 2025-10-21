@@ -1,7 +1,7 @@
 import * as client from "openid-client";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { signToken, verifyToken, createAuthCookie, getTokenFromCookies, clearAuthCookie } from "./jwt";
-import { storage } from "./storage";
+import { signToken, verifyToken, createAuthCookie, getTokenFromCookies, clearAuthCookie } from "./jwt.js";
+import { storage } from "./storage.js";
 
 const getIssuerUrl = () => {
   return process.env.ISSUER_URL || "https://replit.com/oidc";
