@@ -55,9 +55,9 @@ This guide will help you deploy your StudyFlow app to Vercel with serverless fun
 
 1. Go to [vercel.com/new](https://vercel.com/new)
 2. Import your Git repository
-3. Configure build settings:
+3. Configure build settings (these are already set in `vercel.json`):
    - **Framework Preset**: Other
-   - **Build Command**: `npm run build`
+   - **Build Command**: `vite build` (builds frontend only)
    - **Output Directory**: `dist/public`
    - **Install Command**: `npm install`
 
