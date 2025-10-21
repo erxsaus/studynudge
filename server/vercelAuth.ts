@@ -3,16 +3,27 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { signToken, verifyToken, createAuthCookie, getTokenFromCookies, clearAuthCookie } from "./jwt";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS && !process.env.VERCEL_URL) {
-  throw new Error("Environment variable REPLIT_DOMAINS or VERCEL_URL not provided");
-}
-
 const getIssuerUrl = () => {
   return process.env.ISSUER_URL || "https://replit.com/oidc";
 };
 
-const getRedirectUri = () => {
-  const domain = process.env.VERCEL_URL || process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost:5000";
+const getRedirectUri = (req?: VercelRequest) => {
+  // Try to get domain from various sources
+  let domain = process.env.VERCEL_URL || process.env.REPLIT_DOMAINS?.split(",")[0];
+  
+  // If not available, try to construct from request headers
+  if (!domain && req) {
+    const host = req.headers.host || req.headers["x-forwarded-host"];
+    if (host) {
+      domain = Array.isArray(host) ? host[0] : host;
+    }
+  }
+  
+  // Fallback to localhost for development
+  if (!domain) {
+    domain = "localhost:5000";
+  }
+  
   const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
   return `${protocol}://${domain}/api/auth/callback`;
 };
@@ -39,7 +50,7 @@ export async function initiateLogin(req: VercelRequest, res: VercelResponse) {
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
     
     const authUrl = client.buildAuthorizationUrl(config, {
-      redirect_uri: getRedirectUri(),
+      redirect_uri: getRedirectUri(req),
       scope: "openid email profile",
       code_challenge: codeChallenge,
       code_challenge_method: "S256",
@@ -63,7 +74,7 @@ export async function initiateLogin(req: VercelRequest, res: VercelResponse) {
 export async function handleCallback(req: VercelRequest, res: VercelResponse) {
   try {
     const config = await getOidcConfig();
-    const currentUrl = new URL(`${getRedirectUri()}?${new URLSearchParams(req.query as any).toString()}`);
+    const currentUrl = new URL(`${getRedirectUri(req)}?${new URLSearchParams(req.query as any).toString()}`);
     
     // Get code verifier from cookie
     const cookies = req.headers.cookie || "";
