@@ -152,7 +152,7 @@ export async function getCurrentUser(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-export function requireAuth(handler: (req: VercelRequest, res: VercelResponse, userId: string) => Promise<void>) {
+export function requireAuth(handler: (req: VercelRequest, res: VercelResponse, userId: string) => Promise<void | VercelResponse>) {
   return async (req: VercelRequest, res: VercelResponse) => {
     const token = getTokenFromCookies(req.headers.cookie);
     
