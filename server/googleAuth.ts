@@ -52,6 +52,7 @@ export function setupGoogleAuth() {
               .values({
                 id: crypto.randomUUID(),
                 email,
+                password: null,
                 firstName: profile.name?.givenName || null,
                 lastName: profile.name?.familyName || null,
                 profileImageUrl: profileImage || null,
